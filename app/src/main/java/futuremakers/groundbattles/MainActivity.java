@@ -145,7 +145,8 @@ public class MainActivity extends AppCompatActivity implements
         hypertrackUser = (User) successResponse.getResponseObject();
         welcomeText.setText("Hi " + hypertrackUser.getName());
 
-        // TODO: Redirect user to the Map Activity
+        Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
+        startActivity(mapIntent);
     }
 
     private void onHypertrackUserLoginError(ErrorResponse errorResponse) {
