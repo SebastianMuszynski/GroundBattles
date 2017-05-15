@@ -23,4 +23,17 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <fragment
+        android:id="@+id/htMapFragment"
+        android:name="com.hypertrack.lib.HyperTrackMapFragment"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        tools:layout="@layout/fragment_map"
+        app:layout_constraintRight_toLeftOf="@+id/toolbar"
+        tools:layout_constraintTop_creator="1"
+        tools:layout_constraintRight_creator="1"
+        tools:layout_constraintLeft_creator="1"
+        app:layout_constraintLeft_toLeftOf="@+id/toolbar"
+        app:layout_constraintTop_toTopOf="@+id/toolbar" />
+
 </android.support.constraint.ConstraintLayout>
