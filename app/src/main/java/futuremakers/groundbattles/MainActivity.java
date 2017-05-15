@@ -3,30 +3,114 @@ package futuremakers.groundbattles;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
-
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInResult;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.SignInButton;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.hypertrack.lib.HyperTrack;
+import com.hypertrack.lib.callbacks.HyperTrackCallback;
+import com.hypertrack.lib.models.ErrorResponse;
+import com.hypertrack.lib.models.SuccessResponse;
+import com.hypertrack.lib.models.User;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements
+        GoogleApiClient.OnConnectionFailedListener,
+        View.OnClickListener {
+
+    private static final String TAG = "MainActivity";
+    private static final int RC_SIGN_IN = 9001;
+
+    // UI Elements
+    private SignInButton googleSignInButton;
+    private TextView welcomeText;
+
+    // Objects
+    private GoogleSignInOptions googleSignInOptions;
+    private GoogleApiClient googleApiClient;
+    private GoogleSignInAccount googleAccount;
+    private User hypertrackUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        welcomeText = (TextView) findViewById(R.id.welcomeText);
 
         initHyperTrack();
+        initGoogleSignIn();
+    }
+
+    private void initGoogleSignIn() {
+        getGoogleSignInOptions();
+        getGoogleApiClient();
+
+        googleSignInButton = (SignInButton) findViewById(R.id.sign_in_button);
+        googleSignInButton.setOnClickListener(this);
+    }
+
+    private void getGoogleSignInOptions() {
+        // Configure sign-in to request the user's ID, email address, and basic
+        googleSignInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+    }
+
+    private void getGoogleApiClient() {
+        // Build a GoogleApiClient with access to the Google Sign-In API and the
+        // options specified by googleSignInOptions.
+        googleApiClient = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this, this)
+                .addApi(Auth.GOOGLE_SIGN_IN_API, googleSignInOptions)
+                .build();
+    }
+
+    private void handleGoogleSignIn() {
+        Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(googleApiClient);
+        startActivityForResult(signInIntent, RC_SIGN_IN);
+    }
+
+    private void handleSignInResult(GoogleSignInResult result) {
+        if (result.isSuccess()) {
+            handleSignInSuccess(result);
+        } else {
+            handleSignInError(result);
+        }
+    }
+
+    private void handleSignInSuccess(GoogleSignInResult result) {
+        googleAccount = result.getSignInAccount();
+        ensureLocationSettingsAndContinue();
+    }
+
+    private void handleSignInError(GoogleSignInResult result) {
+        Toast.makeText(getApplicationContext(), "Google sign in error", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Toast.makeText(getApplicationContext(), "Google connection failed", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch(v.getId()) {
+            case R.id.sign_in_button:
+                handleGoogleSignIn();
+            break;
+        }
     }
 
     private void initHyperTrack() {
         HyperTrack.initialize(this, "pk_f04d294b0576604faf34b6dcd51aed573531dc2f");
-    }
-
-    public void onLoginButtonClick(View view) {
-        ensureLocationSettingsAndContinue();
     }
 
     private void ensureLocationSettingsAndContinue() {
@@ -39,9 +123,33 @@ public class MainActivity extends AppCompatActivity {
             HyperTrack.requestLocationServices(this, null);
         }
 
-        // TODO:
-        // 1. Login/create HyperTrack User
-        // 2. Redirect user to the Map Activity
+        createOrLoginHypertrackUser();
+    }
+
+    private void createOrLoginHypertrackUser() {
+        HyperTrack.getOrCreateUser(googleAccount.getDisplayName(), null, googleAccount.getId(),
+                new HyperTrackCallback() {
+                    @Override
+                    public void onSuccess(@NonNull SuccessResponse successResponse) {
+                        onHypertrackUserLoginSuccess(successResponse);
+                    }
+
+                    @Override
+                    public void onError(@NonNull ErrorResponse errorResponse) {
+                        onHypertrackUserLoginError(errorResponse);
+                    }
+                });
+    }
+
+    private void onHypertrackUserLoginSuccess(SuccessResponse successResponse) {
+        hypertrackUser = (User) successResponse.getResponseObject();
+        welcomeText.setText("Hi " + hypertrackUser.getName());
+
+        // TODO: Redirect user to the Map Activity
+    }
+
+    private void onHypertrackUserLoginError(ErrorResponse errorResponse) {
+        Toast.makeText(getApplicationContext(), "Hypertrack create or login user error", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -55,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 ensureLocationSettingsAndContinue();
             } else {
-                Toast.makeText(this, "Location Permissions denied.", Toast.LENGTH_SHORT).show();
+                welcomeText.setText("GroundBattles needs your location permisions");
             }
         }
     }
@@ -71,8 +179,14 @@ public class MainActivity extends AppCompatActivity {
             if (resultCode == Activity.RESULT_OK) {
                 ensureLocationSettingsAndContinue();
             } else {
-                Toast.makeText(this, "Location Services denied.", Toast.LENGTH_SHORT).show();
+                welcomeText.setText("GroundBattles needs your location permisions");
             }
+        }
+
+        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
+        if (requestCode == RC_SIGN_IN) {
+            GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
+            handleSignInResult(result);
         }
     }
 }
