@@ -1,16 +1,14 @@
 package futuremakers.groundbattles;
 
-
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -19,6 +17,10 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.hypertrack.lib.HyperTrack;
+import com.hypertrack.lib.callbacks.HyperTrackCallback;
+import com.hypertrack.lib.models.ErrorResponse;
+import com.hypertrack.lib.models.SuccessResponse;
+import com.hypertrack.lib.models.User;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
@@ -26,15 +28,22 @@ public class MainActivity extends AppCompatActivity implements
 
     private static final String TAG = "MainActivity";
     private static final int RC_SIGN_IN = 9001;
+
+    // UI Elements
+    private SignInButton googleSignInButton;
+    private TextView welcomeText;
+
+    // Objects
     private GoogleSignInOptions googleSignInOptions;
     private GoogleApiClient googleApiClient;
-    private SignInButton googleSignInButton;
     private GoogleSignInAccount googleAccount;
+    private User hypertrackUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        welcomeText = (TextView) findViewById(R.id.welcomeText);
 
         initHyperTrack();
         initGoogleSignIn();
@@ -70,7 +79,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void handleSignInResult(GoogleSignInResult result) {
-        Log.d(TAG, "handleSignInResult:" + result.isSuccess());
         if (result.isSuccess()) {
             handleSignInSuccess(result);
         } else {
@@ -80,9 +88,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void handleSignInSuccess(GoogleSignInResult result) {
         googleAccount = result.getSignInAccount();
-        // TODO: Do something useful after signing in
-        Toast.makeText(getApplicationContext(), "Google user signed in", Toast.LENGTH_SHORT).show();
-
+        ensureLocationSettingsAndContinue();
     }
 
     private void handleSignInError(GoogleSignInResult result) {
@@ -107,10 +113,6 @@ public class MainActivity extends AppCompatActivity implements
         HyperTrack.initialize(this, "pk_f04d294b0576604faf34b6dcd51aed573531dc2f");
     }
 
-    public void onLoginButtonClick(View view) {
-        ensureLocationSettingsAndContinue();
-    }
-
     private void ensureLocationSettingsAndContinue() {
         if (!HyperTrack.checkLocationPermission(this)) {
             HyperTrack.requestPermissions(this);
@@ -121,9 +123,33 @@ public class MainActivity extends AppCompatActivity implements
             HyperTrack.requestLocationServices(this, null);
         }
 
-        // TODO:
-        // 1. Login/create HyperTrack User
-        // 2. Redirect user to the Map Activity
+        createOrLoginHypertrackUser();
+    }
+
+    private void createOrLoginHypertrackUser() {
+        HyperTrack.getOrCreateUser(googleAccount.getDisplayName(), null, googleAccount.getId(),
+                new HyperTrackCallback() {
+                    @Override
+                    public void onSuccess(@NonNull SuccessResponse successResponse) {
+                        onHypertrackUserLoginSuccess(successResponse);
+                    }
+
+                    @Override
+                    public void onError(@NonNull ErrorResponse errorResponse) {
+                        onHypertrackUserLoginError(errorResponse);
+                    }
+                });
+    }
+
+    private void onHypertrackUserLoginSuccess(SuccessResponse successResponse) {
+        hypertrackUser = (User) successResponse.getResponseObject();
+        welcomeText.setText("Hi " + hypertrackUser.getName());
+
+        // TODO: Redirect user to the Map Activity
+    }
+
+    private void onHypertrackUserLoginError(ErrorResponse errorResponse) {
+        Toast.makeText(getApplicationContext(), "Hypertrack create or login user error", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -137,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 ensureLocationSettingsAndContinue();
             } else {
-                Toast.makeText(this, "Location Permissions denied.", Toast.LENGTH_SHORT).show();
+                welcomeText.setText("GroundBattles needs your location permisions");
             }
         }
     }
@@ -153,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements
             if (resultCode == Activity.RESULT_OK) {
                 ensureLocationSettingsAndContinue();
             } else {
-                Toast.makeText(this, "Location Services denied.", Toast.LENGTH_SHORT).show();
+                welcomeText.setText("GroundBattles needs your location permisions");
             }
         }
 
