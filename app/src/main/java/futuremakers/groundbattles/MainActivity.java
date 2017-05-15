@@ -1,9 +1,12 @@
 package futuremakers.groundbattles;
 
+
+import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -15,10 +18,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.hypertrack.lib.HyperTrack;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener {
+
     private static final String TAG = "MainActivity";
     private static final int RC_SIGN_IN = 9001;
     private GoogleSignInOptions googleSignInOptions;
@@ -31,6 +36,11 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        initHyperTrack();
+        initGoogleSignIn();
+    }
+
+    private void initGoogleSignIn() {
         getGoogleSignInOptions();
         getGoogleApiClient();
 
@@ -93,9 +103,59 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    private void initHyperTrack() {
+        HyperTrack.initialize(this, "pk_f04d294b0576604faf34b6dcd51aed573531dc2f");
+    }
+
+    public void onLoginButtonClick(View view) {
+        ensureLocationSettingsAndContinue();
+    }
+
+    private void ensureLocationSettingsAndContinue() {
+        if (!HyperTrack.checkLocationPermission(this)) {
+            HyperTrack.requestPermissions(this);
+            return;
+        }
+
+        if (!HyperTrack.checkLocationServices(this)) {
+            HyperTrack.requestLocationServices(this, null);
+        }
+
+        // TODO:
+        // 1. Login/create HyperTrack User
+        // 2. Redirect user to the Map Activity
+    }
+
+    /**
+     * Handle on Grant Location Permissions request accepted/denied result
+     */
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == HyperTrack.REQUEST_CODE_LOCATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                ensureLocationSettingsAndContinue();
+            } else {
+                Toast.makeText(this, "Location Permissions denied.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
+     * Handle on Enable Location Services request accepted/denied result
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == HyperTrack.REQUEST_CODE_LOCATION_SERVICES) {
+            if (resultCode == Activity.RESULT_OK) {
+                ensureLocationSettingsAndContinue();
+            } else {
+                Toast.makeText(this, "Location Services denied.", Toast.LENGTH_SHORT).show();
+            }
+        }
 
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
