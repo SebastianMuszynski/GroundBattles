@@ -127,7 +127,11 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void createOrLoginHypertrackUser() {
-        HyperTrack.getOrCreateUser(googleAccount.getDisplayName(), null, googleAccount.getId(),
+        String userName = googleAccount.getDisplayName();
+        String phoneNumber = null;
+        String userId = googleAccount.getId();
+
+        HyperTrack.getOrCreateUser(userName, phoneNumber, userId,
                 new HyperTrackCallback() {
                     @Override
                     public void onSuccess(@NonNull SuccessResponse successResponse) {
@@ -142,10 +146,10 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void onHypertrackUserLoginSuccess(SuccessResponse successResponse) {
-        UserData userData = UserData.getInstance();
-        userData.setUser((User) successResponse.getResponseObject());
+        User loggedUser = (User) successResponse.getResponseObject();
+        UserData.getInstance().setUser(loggedUser);
 
-        welcomeText.setText("Hi " + userData.getUser().getName());
+        welcomeText.setText("Hi " + loggedUser.getName());
 
         Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
         startActivity(mapIntent);

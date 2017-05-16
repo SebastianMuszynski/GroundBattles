@@ -11,13 +11,13 @@ import com.google.maps.android.SphericalUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MapDrawer {
+public class LandDrawer {
     GoogleMap map;
     int colorLine;
     int colorBackground;
     List<LatLng> coords = new ArrayList<LatLng>();
 
-    public MapDrawer(GoogleMap googleMapInstance) {
+    public LandDrawer(GoogleMap googleMapInstance) {
         map = googleMapInstance;
         // Todo: get way to set color
         colorLine = 0xff000000;
