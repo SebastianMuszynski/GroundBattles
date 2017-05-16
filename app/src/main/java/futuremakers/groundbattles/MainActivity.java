@@ -142,8 +142,10 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void onHypertrackUserLoginSuccess(SuccessResponse successResponse) {
-        hypertrackUser = (User) successResponse.getResponseObject();
-        welcomeText.setText("Hi " + hypertrackUser.getName());
+        UserData userData = UserData.getInstance();
+        userData.setUser((User) successResponse.getResponseObject());
+
+        welcomeText.setText("Hi " + userData.getUser().getName());
 
         Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
         startActivity(mapIntent);
