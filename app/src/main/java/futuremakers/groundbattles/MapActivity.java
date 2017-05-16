@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 import com.hypertrack.lib.HyperTrack;
@@ -31,6 +32,7 @@ public class MapActivity extends AppCompatActivity {
     private Button startTrackingBtn;
     private Button stopTrackingBtn;
     private boolean hasReachedMinStartDistance = false;
+    private Polyline userPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,13 +106,15 @@ public class MapActivity extends AppCompatActivity {
                     LatLng firstPoint = decodedPolyline.get(0);
                     LatLng lastPoint = decodedPolyline.get(decodedPolyline.size()-1);
 
-                    if (decodedPolyline.size() > 1 && SphericalUtil.computeDistanceBetween(lastPoint, firstPoint) > 20) {
+                    if (decodedPolyline.size() > 1 && SphericalUtil.computeDistanceBetween(lastPoint, firstPoint) <= 30) {
                         if (hasReachedMinStartDistance) {
+                            userPath.remove();
                             landDrawer.drawPolygon();
+                            stopTrackingUser();
                         }
                     } else {
                         hasReachedMinStartDistance = true;
-                        landDrawer.drawPolyline(lastPoint);
+                        userPath = landDrawer.drawPolyline(lastPoint);
                     }
                 }
 
