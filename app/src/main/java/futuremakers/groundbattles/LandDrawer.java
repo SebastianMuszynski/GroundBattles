@@ -46,8 +46,8 @@ public class LandDrawer {
         return drawPolyline();
     }
 
-    public void drawCircle(LatLng centerPoint, double radius) {
-        map.addCircle(
+    public Circle drawCircle(LatLng centerPoint, double radius) {
+        return map.addCircle(
             new CircleOptions()
                 .center(centerPoint)
                 .radius(radius)
