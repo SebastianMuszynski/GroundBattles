@@ -17,10 +17,10 @@ class MyMapAdapter extends HyperTrackMapAdapter {
         this.mContext = mContext;
     }
 
-//    @Override
-//    public int getHeroMarkerIconForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
-//        return R.drawable.ic_hero_maker;
-//    }
+    @Override
+    public int getHeroMarkerIconForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
+        return R.drawable.diamond;
+    }
 
     @Override
     public boolean showAddressInfoViewForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {

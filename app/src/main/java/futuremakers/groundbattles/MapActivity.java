@@ -1,6 +1,5 @@
 package futuremakers.groundbattles;
 
-import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -10,10 +9,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 import com.hypertrack.lib.HyperTrack;
@@ -34,12 +30,7 @@ public class MapActivity extends AppCompatActivity {
     private LandDrawer landDrawer;
     private Button startTrackingBtn;
     private Button stopTrackingBtn;
-    private double startCircleRadius = 10;
-    private LatLng startPoint;
-    private boolean hasStartedTakingLand = false;
-    private boolean isCircleDrawn = false;
-    private Circle startCircle;
-    private Polyline userPath;
+    private boolean hasReachedMinStartDistance = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +67,8 @@ public class MapActivity extends AppCompatActivity {
                 stopTrackingUser();
             }
         });
+
+        stopTrackingBtn.setVisibility(View.INVISIBLE);
     }
 
     private void initHyperTrackMap() {
@@ -93,66 +86,28 @@ public class MapActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onHeroMarkerAdded(HyperTrackMapFragment hyperTrackMapFragment, String actionID, Marker heroMarker) {
-            Toast.makeText(getApplicationContext(), "Hero Marker added", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        public void onActionStatusChanged(List<String> changedStatusActionIds, List<Action> changedStatusActions) {
-            super.onActionStatusChanged(changedStatusActionIds, changedStatusActions);
-        }
-
-        @Override
         public void onActionRefreshed(List<String> refreshedActionIds, List<Action> refreshedActions) {
-            Toast.makeText(getApplicationContext(), "Action Refreshed", Toast.LENGTH_SHORT).show();
-
             String polyline = refreshedActions.get(0).getEncodedPolyline();
 
             if (polyline != null) {
                 List<LatLng> decodedPolyline = PolyUtil.decode(polyline);
-                landDrawer.drawEntirePolyline(decodedPolyline);
-                Toast.makeText(getApplicationContext(), "I'm drawing!", Toast.LENGTH_SHORT).show();
-            }
 
-//            HyperTrack.getCurrentLocation(new HyperTrackCallback() {
-//                @Override
-//                public void onSuccess(@NonNull SuccessResponse successResponse) {
-//                    Location location = (Location) successResponse.getResponseObject();
-//
-//                    LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
-//
-//                    if(startPoint == null) {
-//                        startPoint = currentLocation;
-//                        userPath = landDrawer.drawPolyline(currentLocation);
-//                    } else {
-//                        if(hasStartedTakingLand) {
-//                            if(SphericalUtil.computeDistanceBetween(startPoint, currentLocation) <= startCircleRadius) {
-//                                landDrawer.drawPolygon();
-//                                userPath.remove();
-//                                stopTrackingUser();
-//                            } else {
-//                                userPath = landDrawer.drawPolyline(currentLocation);
-//                            }
-//                        } else {
-//                            if(!isCircleDrawn) {
-//                                startCircle = landDrawer.drawCircle(startPoint, startCircleRadius);
-//                                isCircleDrawn = true;
-//                            }
-//                            if(SphericalUtil.computeDistanceBetween(startPoint, currentLocation) > startCircleRadius) {
-//                                hasStartedTakingLand = true;
-//                                startCircle.remove();
-//                            }
-//                        }
-//
-//                    }
-//                    Toast.makeText(MapActivity.this, String.valueOf(SphericalUtil.computeDistanceBetween(startPoint, currentLocation)), Toast.LENGTH_SHORT).show();
-//                }
-//
-//                @Override
-//                public void onError(@NonNull ErrorResponse errorResponse) {
-//                    Toast.makeText(getApplicationContext(), "On Action Refreshed error", Toast.LENGTH_SHORT).show();
-//                }
-//            });
+                if (decodedPolyline.size() > 0) {
+
+                    LatLng firstPoint = decodedPolyline.get(0);
+                    LatLng lastPoint = decodedPolyline.get(decodedPolyline.size()-1);
+
+                    if (decodedPolyline.size() > 1 && SphericalUtil.computeDistanceBetween(lastPoint, firstPoint) > 20) {
+                        if (hasReachedMinStartDistance) {
+                            landDrawer.drawPolygon();
+                        }
+                    } else {
+                        hasReachedMinStartDistance = true;
+                        landDrawer.drawPolyline(lastPoint);
+                    }
+                }
+
+            }
         }
     };
 
@@ -164,6 +119,8 @@ public class MapActivity extends AppCompatActivity {
 
                 if (ActionsData.getInstance().getActionIds().size() < 1) {
                     assignActionToUser();
+                    startTrackingBtn.setVisibility(View.INVISIBLE);
+                    stopTrackingBtn.setVisibility(View.VISIBLE);
                 }
             }
 
@@ -223,7 +180,7 @@ public class MapActivity extends AppCompatActivity {
 
         HyperTrack.stopTracking();
 
-        isCircleDrawn = false;
-//      // HyperTrack.removeActions(ActionsData.getInstance().getActionIds());
+        startTrackingBtn.setVisibility(View.VISIBLE);
+        stopTrackingBtn.setVisibility(View.INVISIBLE);
     }
 }
