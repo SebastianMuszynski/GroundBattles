@@ -17,6 +17,7 @@ import com.hypertrack.lib.callbacks.HyperTrackCallback;
 import com.hypertrack.lib.models.Action;
 import com.hypertrack.lib.models.ActionParams;
 import com.hypertrack.lib.models.ErrorResponse;
+import com.hypertrack.lib.models.Place;
 import com.hypertrack.lib.models.SuccessResponse;
 
 import java.util.List;
@@ -131,7 +132,21 @@ public class MapActivity extends AppCompatActivity {
     }
 
     private void assignActionToUser() {
-        ActionParams actionParams = new ActionParams("testUserId", null, null, null, null, null);
+        String userId = UserData.getInstance().getUser().getId();
+        String expectedPlaceId = null;
+        Place expectedPlace = null;
+        String lookupId = null;
+        String type = "visit";
+        String expectedAt = null;
+
+        ActionParams actionParams = new ActionParams(
+            userId,
+            expectedPlaceId,
+            expectedPlace,
+            type,
+            lookupId,
+            expectedAt
+        );
 
         HyperTrack.createAndAssignAction(actionParams, new HyperTrackCallback() {
             @Override
