@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.hypertrack.lib.HyperTrack;
 import com.hypertrack.lib.HyperTrackMapFragment;
@@ -17,6 +18,7 @@ import com.hypertrack.lib.callbacks.HyperTrackCallback;
 import com.hypertrack.lib.models.Action;
 import com.hypertrack.lib.models.ActionParams;
 import com.hypertrack.lib.models.ErrorResponse;
+import com.hypertrack.lib.models.HyperTrackLocation;
 import com.hypertrack.lib.models.Place;
 import com.hypertrack.lib.models.SuccessResponse;
 
@@ -24,6 +26,8 @@ import java.util.List;
 
 public class MapActivity extends AppCompatActivity {
 
+    private HyperTrackMapFragment htMap;
+    private LandDrawer landDrawer;
     private Button startTrackingBtn;
     private Button stopTrackingBtn;
 
@@ -66,7 +70,7 @@ public class MapActivity extends AppCompatActivity {
     }
 
     private void initHyperTrackMap() {
-        HyperTrackMapFragment htMap = (HyperTrackMapFragment) getSupportFragmentManager().findFragmentById(R.id.htMapFragment);
+        htMap = (HyperTrackMapFragment) getSupportFragmentManager().findFragmentById(R.id.htMapFragment);
         htMap.setHTMapAdapter(new MyMapAdapter(MapActivity.this));
         htMap.setMapFragmentCallback(htMapCallback);
     }
@@ -75,6 +79,8 @@ public class MapActivity extends AppCompatActivity {
         @Override
         public void onMapReadyCallback(HyperTrackMapFragment hyperTrackMapFragment, GoogleMap map){
             Toast.makeText(getApplicationContext(), "Prepare yourself!", Toast.LENGTH_SHORT).show();
+
+            landDrawer = new LandDrawer(map);
         }
 
         @Override
@@ -90,6 +96,12 @@ public class MapActivity extends AppCompatActivity {
         @Override
         public void onActionRefreshed(List<String> refreshedActionIds, List<Action> refreshedActions) {
             super.onActionRefreshed(refreshedActionIds, refreshedActions);
+
+            HyperTrackLocation lastPoint = refreshedActions.get(0).getUser().getLastLocation();
+            LatLng lastPointLatLng = lastPoint.getGeoJSONLocation().getLatLng();
+            landDrawer.drawPolyline(lastPointLatLng);
+
+            System.out.println(landDrawer.getPolylineLength());
         }
     };
 
@@ -106,6 +118,19 @@ public class MapActivity extends AppCompatActivity {
 
 //                Intent intent = new Intent(this, TrackingActivity.class);
 //                startActivity(intent);
+
+                HyperTrack.getAction(actionsList.get(0).getId(), new HyperTrackCallback() {
+                    @Override
+                    public void onSuccess(@NonNull SuccessResponse response) {
+                        Action actionResponse = (Action) response.getResponseObject();
+                        System.out.println(actionResponse);
+                    }
+
+                    @Override
+                    public void onError(@NonNull ErrorResponse errorResponse) {
+                        Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
 
             @Override
@@ -136,7 +161,7 @@ public class MapActivity extends AppCompatActivity {
         String expectedPlaceId = null;
         Place expectedPlace = null;
         String lookupId = null;
-        String type = "visit";
+        String type = Action.ACTION_TYPE_VISIT;
         String expectedAt = null;
 
         ActionParams actionParams = new ActionParams(

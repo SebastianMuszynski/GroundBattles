@@ -41,6 +41,6 @@ class MyMapAdapter extends HyperTrackMapAdapter {
 
     @Override
     public boolean showTrailingPolyline() {
-        return true;
+        return false;
     }
 }
