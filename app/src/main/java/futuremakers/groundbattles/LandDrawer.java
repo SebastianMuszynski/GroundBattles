@@ -1,6 +1,10 @@
 package futuremakers.groundbattles;
 
+import android.graphics.Color;
+
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
@@ -40,6 +44,20 @@ public class LandDrawer {
     public Polyline drawPolyline(LatLng point) {
         addPoint(point);
         return drawPolyline();
+    }
+
+    public Polyline drawEntirePolyline(List<LatLng> points) {
+        for (LatLng point : points) addPoint(point);
+        return drawPolyline();
+    }
+
+    public Circle drawCircle(LatLng centerPoint, double radius) {
+        return map.addCircle(
+            new CircleOptions()
+                .center(centerPoint)
+                .radius(radius)
+                .fillColor(Color.argb(150, 255, 0, 0))
+        );
     }
 
     public Polygon drawPolygon() {

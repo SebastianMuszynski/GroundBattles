@@ -9,7 +9,10 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.maps.android.PolyUtil;
+import com.google.maps.android.SphericalUtil;
 import com.hypertrack.lib.HyperTrack;
 import com.hypertrack.lib.HyperTrackMapFragment;
 import com.hypertrack.lib.MapFragmentCallback;
@@ -24,14 +27,17 @@ import java.util.List;
 
 public class MapActivity extends AppCompatActivity {
 
+    private HyperTrackMapFragment htMap;
+    private LandDrawer landDrawer;
     private Button startTrackingBtn;
     private Button stopTrackingBtn;
+    private boolean hasReachedMinStartDistance = false;
+    private Polyline userPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
-
         initView();
     }
 
@@ -53,6 +59,9 @@ public class MapActivity extends AppCompatActivity {
         startTrackingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                startTrackingBtn.setVisibility(View.INVISIBLE);
+                stopTrackingBtn.setVisibility(View.VISIBLE);
+
                 startTrackingUser();
             }
         });
@@ -60,13 +69,19 @@ public class MapActivity extends AppCompatActivity {
         stopTrackingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                startTrackingBtn.setVisibility(View.VISIBLE);
+                stopTrackingBtn.setVisibility(View.INVISIBLE);
+
                 stopTrackingUser();
             }
         });
+
+        startTrackingBtn.setVisibility(View.VISIBLE);
+        stopTrackingBtn.setVisibility(View.INVISIBLE);
     }
 
     private void initHyperTrackMap() {
-        HyperTrackMapFragment htMap = (HyperTrackMapFragment) getSupportFragmentManager().findFragmentById(R.id.htMapFragment);
+        htMap = (HyperTrackMapFragment) getSupportFragmentManager().findFragmentById(R.id.htMapFragment);
         htMap.setHTMapAdapter(new MyMapAdapter(MapActivity.this));
         htMap.setMapFragmentCallback(htMapCallback);
     }
@@ -75,45 +90,37 @@ public class MapActivity extends AppCompatActivity {
         @Override
         public void onMapReadyCallback(HyperTrackMapFragment hyperTrackMapFragment, GoogleMap map){
             Toast.makeText(getApplicationContext(), "Prepare yourself!", Toast.LENGTH_SHORT).show();
-        }
 
-        @Override
-        public void onHeroMarkerAdded(HyperTrackMapFragment hyperTrackMapFragment, String actionID, Marker heroMarker) {
-            Toast.makeText(getApplicationContext(), "Hero Marker Added callback", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        public void onActionStatusChanged(List<String> changedStatusActionIds, List<Action> changedStatusActions) {
-            super.onActionStatusChanged(changedStatusActionIds, changedStatusActions);
+            landDrawer = new LandDrawer(map);
         }
 
         @Override
         public void onActionRefreshed(List<String> refreshedActionIds, List<Action> refreshedActions) {
-            super.onActionRefreshed(refreshedActionIds, refreshedActions);
+            String polyline = refreshedActions.get(0).getEncodedPolyline();
+
+            if (polyline != null) {
+                List<LatLng> decodedPolyline = PolyUtil.decode(polyline);
+
+                if (decodedPolyline.size() > 0) {
+
+                    LatLng firstPoint = decodedPolyline.get(0);
+                    LatLng lastPoint = decodedPolyline.get(decodedPolyline.size()-1);
+
+                    if (decodedPolyline.size() > 1 && SphericalUtil.computeDistanceBetween(lastPoint, firstPoint) <= 30) {
+                        if (hasReachedMinStartDistance) {
+                            userPath.remove();
+                            landDrawer.drawPolygon();
+                            stopTrackingUser();
+                        }
+                    } else {
+                        hasReachedMinStartDistance = true;
+                        userPath = landDrawer.drawPolyline(lastPoint);
+                    }
+                }
+
+            }
         }
     };
-
-    private void trackActions() {
-        System.out.println(ActionsData.getInstance().getActionIds());
-        HyperTrack.trackAction(ActionsData.getInstance().getActionIds(), new HyperTrackCallback() {
-            @Override
-            public void onSuccess(@NonNull SuccessResponse response) {
-                List<Action> actionsList = (List<Action>) response.getResponseObject();
-                System.out.println(actionsList);
-
-//                // Start Activity containing HyperTrackMapFragment
-//                // ActionId can also be passed along as intent extras
-
-//                Intent intent = new Intent(this, TrackingActivity.class);
-//                startActivity(intent);
-            }
-
-            @Override
-            public void onError(@NonNull ErrorResponse errorResponse) {
-                Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
 
     private void startTrackingUser() {
         HyperTrack.startTracking(new HyperTrackCallback() {
@@ -121,7 +128,9 @@ public class MapActivity extends AppCompatActivity {
             public void onSuccess(@NonNull SuccessResponse successResponse) {
                 Toast.makeText(MapActivity.this, "Started tracking!", Toast.LENGTH_SHORT).show();
 
-                assignActionToUser();
+                if (ActionsData.getInstance().getActionIds().size() < 1) {
+                    assignActionToUser();
+                }
             }
 
             @Override
@@ -136,7 +145,7 @@ public class MapActivity extends AppCompatActivity {
         String expectedPlaceId = null;
         Place expectedPlace = null;
         String lookupId = null;
-        String type = "visit";
+        String type = Action.ACTION_TYPE_VISIT;
         String expectedAt = null;
 
         ActionParams actionParams = new ActionParams(
@@ -168,9 +177,17 @@ public class MapActivity extends AppCompatActivity {
         });
     }
 
-    private void stopTrackingUser() {
-        HyperTrack.stopTracking();
+    private void trackActions() {
+        System.out.println(ActionsData.getInstance().getActionIds());
+        HyperTrack.trackAction(ActionsData.getInstance().getActionIds(), null);
+    }
 
-        HyperTrack.removeActions(null);
+    private void stopTrackingUser() {
+        if (ActionsData.getInstance().getActionIds().size() > 0) {
+            HyperTrack.completeAction(ActionsData.getInstance().getActionIds().get(0));
+            ActionsData.getInstance().clearActions();
+        }
+
+        HyperTrack.stopTracking();
     }
 }

@@ -6,6 +6,7 @@ import java.util.List;
 public class ActionsData {
     private static final ActionsData actionsData = new ActionsData();
     private List<String> actionIds = new ArrayList<>();
+    public static final String actionId = "UserAction";
 
     public static ActionsData getInstance() {
         return actionsData;
@@ -17,5 +18,9 @@ public class ActionsData {
 
     public List<String> getActionIds() {
         return actionIds;
+    }
+
+    public void clearActions() {
+        actionIds = new ArrayList<>();
     }
 }

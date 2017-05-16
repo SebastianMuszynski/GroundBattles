@@ -15,7 +15,11 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".MapActivity" android:theme="@style/MapTheme" />
+        <activity
+            android:name=".MapActivity"
+            android:theme="@style/MapTheme"
+            android:configChanges = "orientation"
+            android:screenOrientation = "portrait"/>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -25,6 +29,13 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
 
+        <service android:name=".AppFCMListenerService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
     </application>
+
 
 </manifest>
