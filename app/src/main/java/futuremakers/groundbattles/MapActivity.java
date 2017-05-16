@@ -13,7 +13,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.maps.android.SphericalUtil;
 import com.hypertrack.lib.HyperTrack;
@@ -146,7 +145,6 @@ public class MapActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "On Action Refreshed error", Toast.LENGTH_SHORT).show();
                 }
             });
-
         }
     };
 
