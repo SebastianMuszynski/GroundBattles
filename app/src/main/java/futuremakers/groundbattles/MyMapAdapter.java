@@ -15,8 +15,8 @@ class MyMapAdapter extends HyperTrackMapAdapter {
     }
 
     @Override
-    public int getSourceMarkerIconForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
-        return R.drawable.marker_cat;
+    public View getSourceMarkerViewForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
+        return null;
     }
 
     @Override
@@ -30,7 +30,17 @@ class MyMapAdapter extends HyperTrackMapAdapter {
     }
 
     @Override
-    public boolean enableLiveLocationSharingView() {
+    public boolean showAddressInfoViewForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
+        return false;
+    }
+
+    @Override
+    public boolean showAddressInfoViewForMultipleActionsView(HyperTrackMapFragment hyperTrackMapFragment) {
+        return false;
+    }
+
+    @Override
+    public boolean showOrderStatusToolbar(HyperTrackMapFragment hyperTrackMapFragment) {
         return false;
     }
 

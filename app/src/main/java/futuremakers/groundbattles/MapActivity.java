@@ -1,5 +1,6 @@
 package futuremakers.groundbattles;
 
+import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -18,7 +19,6 @@ import com.hypertrack.lib.callbacks.HyperTrackCallback;
 import com.hypertrack.lib.models.Action;
 import com.hypertrack.lib.models.ActionParams;
 import com.hypertrack.lib.models.ErrorResponse;
-import com.hypertrack.lib.models.HyperTrackLocation;
 import com.hypertrack.lib.models.Place;
 import com.hypertrack.lib.models.SuccessResponse;
 
@@ -30,6 +30,9 @@ public class MapActivity extends AppCompatActivity {
     private LandDrawer landDrawer;
     private Button startTrackingBtn;
     private Button stopTrackingBtn;
+    private double startCircleRadius = 100;
+    private boolean hasStartedTakingLand = false;
+    private boolean hasDrawnCircle = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,7 +88,7 @@ public class MapActivity extends AppCompatActivity {
 
         @Override
         public void onHeroMarkerAdded(HyperTrackMapFragment hyperTrackMapFragment, String actionID, Marker heroMarker) {
-            Toast.makeText(getApplicationContext(), "Hero Marker Added callback", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "Hero Marker added", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -96,48 +99,59 @@ public class MapActivity extends AppCompatActivity {
         @Override
         public void onActionRefreshed(List<String> refreshedActionIds, List<Action> refreshedActions) {
             super.onActionRefreshed(refreshedActionIds, refreshedActions);
+            Toast.makeText(getApplicationContext(), "Action Refreshed", Toast.LENGTH_SHORT).show();
 
-            HyperTrackLocation lastPoint = refreshedActions.get(0).getUser().getLastLocation();
-            LatLng lastPointLatLng = lastPoint.getGeoJSONLocation().getLatLng();
-            landDrawer.drawPolyline(lastPointLatLng);
+            final Action userAction = refreshedActions.get(0);
 
-            System.out.println(landDrawer.getPolylineLength());
-        }
-    };
+            LatLng lastStartPoint = userAction.getUser().getLastLocation().getGeoJSONLocation().getLatLng();
 
-    private void trackActions() {
-        System.out.println(ActionsData.getInstance().getActionIds());
-        HyperTrack.trackAction(ActionsData.getInstance().getActionIds(), new HyperTrackCallback() {
-            @Override
-            public void onSuccess(@NonNull SuccessResponse response) {
-                List<Action> actionsList = (List<Action>) response.getResponseObject();
-                System.out.println(actionsList);
+//            Place startPlace = userAction.getStartPlace();
 
-//                // Start Activity containing HyperTrackMapFragment
-//                // ActionId can also be passed along as intent extras
 
-//                Intent intent = new Intent(this, TrackingActivity.class);
-//                startActivity(intent);
+            if (lastStartPoint != null) {
+                Toast.makeText(getApplicationContext(), lastStartPoint.toString(), Toast.LENGTH_SHORT).show();
+//                final LatLng initialLocation = startPlace.getLocation().getLatLng();
 
-                HyperTrack.getAction(actionsList.get(0).getId(), new HyperTrackCallback() {
+                HyperTrack.getCurrentLocation(new HyperTrackCallback() {
                     @Override
-                    public void onSuccess(@NonNull SuccessResponse response) {
-                        Action actionResponse = (Action) response.getResponseObject();
-                        System.out.println(actionResponse);
+                    public void onSuccess(@NonNull SuccessResponse successResponse) {
+                        Location location = (Location) successResponse.getResponseObject();
+                        LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+
+                        if (hasStartedTakingLand) {
+                            if (distanceBeetweenPoints(lastStartPoint, currentLocation) <= startCircleRadius) {
+                                landDrawer.drawPolygon();
+
+                                HyperTrack.completeAction(userAction.getId());
+                            } else {
+                                landDrawer.drawPolyline(currentLocation);
+                            }
+                        } else {
+                            if (!hasDrawnCircle) {
+                                landDrawer.drawCircle(lastStartPoint, startCircleRadius);
+                                hasDrawnCircle = true;
+                            }
+
+                            if (distanceBeetweenPoints(lastStartPoint, currentLocation) > startCircleRadius) {
+                                hasStartedTakingLand = true;
+                            }
+                        }
+
+                        Toast.makeText(MapActivity.this, landDrawer.getPolylineLength().toString(), Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onError(@NonNull ErrorResponse errorResponse) {
-                        Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "On Action Refreshed error", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
 
-            @Override
-            public void onError(@NonNull ErrorResponse errorResponse) {
-                Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
-            }
-        });
+        }
+    };
+
+    private double distanceBeetweenPoints(LatLng from, LatLng to) {
+        return Math.sqrt(Math.pow(from.latitude - to.latitude, 2) + Math.pow(from.longitude - to.longitude, 2));
     }
 
     private void startTrackingUser() {
@@ -189,6 +203,35 @@ public class MapActivity extends AppCompatActivity {
             @Override
             public void onError(@NonNull ErrorResponse errorResponse) {
                 Toast.makeText(getApplicationContext(), "Could not assign an action to a user", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void trackActions() {
+        System.out.println(ActionsData.getInstance().getActionIds());
+        HyperTrack.trackAction(ActionsData.getInstance().getActionIds(), new HyperTrackCallback() {
+            @Override
+            public void onSuccess(@NonNull SuccessResponse response) {
+                List<Action> actionsList = (List<Action>) response.getResponseObject();
+                System.out.println(actionsList);
+
+                HyperTrack.getAction(actionsList.get(0).getId(), new HyperTrackCallback() {
+                    @Override
+                    public void onSuccess(@NonNull SuccessResponse response) {
+                        Action actionResponse = (Action) response.getResponseObject();
+                        System.out.println(actionResponse);
+                    }
+
+                    @Override
+                    public void onError(@NonNull ErrorResponse errorResponse) {
+                        Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(@NonNull ErrorResponse errorResponse) {
+                Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
             }
         });
     }
