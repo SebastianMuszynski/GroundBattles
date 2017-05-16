@@ -29,7 +29,7 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 
-    compile('com.hypertrack:android:0.2.2:release@aar') {
+    compile('com.hypertrack:android:0.2.3:release@aar') {
         transitive = true;
     }
 

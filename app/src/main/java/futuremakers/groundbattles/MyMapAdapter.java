@@ -26,12 +26,7 @@ class MyMapAdapter extends HyperTrackMapAdapter {
     public boolean showAddressInfoViewForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
         return false;
     }
-
-    @Override
-    public boolean showAddressInfoViewForMultipleActionsView(HyperTrackMapFragment hyperTrackMapFragment) {
-        return false;
-    }
-
+    
     @Override
     public boolean showOrderStatusToolbar(HyperTrackMapFragment hyperTrackMapFragment) {
         return false;
@@ -49,7 +44,6 @@ class MyMapAdapter extends HyperTrackMapAdapter {
 
     @Override
     public boolean showPlaceSelectorView() {
-
         return false;
     }
 

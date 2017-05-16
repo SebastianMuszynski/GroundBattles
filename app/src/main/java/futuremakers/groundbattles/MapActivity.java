@@ -57,6 +57,9 @@ public class MapActivity extends AppCompatActivity {
         startTrackingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                startTrackingBtn.setVisibility(View.INVISIBLE);
+                stopTrackingBtn.setVisibility(View.VISIBLE);
+
                 startTrackingUser();
             }
         });
@@ -64,10 +67,14 @@ public class MapActivity extends AppCompatActivity {
         stopTrackingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                startTrackingBtn.setVisibility(View.VISIBLE);
+                stopTrackingBtn.setVisibility(View.INVISIBLE);
+
                 stopTrackingUser();
             }
         });
 
+        startTrackingBtn.setVisibility(View.VISIBLE);
         stopTrackingBtn.setVisibility(View.INVISIBLE);
     }
 
@@ -119,8 +126,6 @@ public class MapActivity extends AppCompatActivity {
 
                 if (ActionsData.getInstance().getActionIds().size() < 1) {
                     assignActionToUser();
-                    startTrackingBtn.setVisibility(View.INVISIBLE);
-                    stopTrackingBtn.setVisibility(View.VISIBLE);
                 }
             }
 
@@ -176,11 +181,9 @@ public class MapActivity extends AppCompatActivity {
     private void stopTrackingUser() {
         if (ActionsData.getInstance().getActionIds().size() > 0) {
             HyperTrack.completeAction(ActionsData.getInstance().getActionIds().get(0));
+            ActionsData.getInstance().clearActions();
         }
 
         HyperTrack.stopTracking();
-
-        startTrackingBtn.setVisibility(View.VISIBLE);
-        stopTrackingBtn.setVisibility(View.INVISIBLE);
     }
 }

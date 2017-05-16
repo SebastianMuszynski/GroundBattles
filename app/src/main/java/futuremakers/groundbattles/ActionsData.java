@@ -19,4 +19,8 @@ public class ActionsData {
     public List<String> getActionIds() {
         return actionIds;
     }
+
+    public void clearActions() {
+        actionIds = new ArrayList<>();
+    }
 }
