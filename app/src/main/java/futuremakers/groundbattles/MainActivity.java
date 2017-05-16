@@ -18,8 +18,6 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.hypertrack.lib.HyperTrack;
 import com.hypertrack.lib.callbacks.HyperTrackCallback;
-import com.hypertrack.lib.models.Action;
-import com.hypertrack.lib.models.ActionParams;
 import com.hypertrack.lib.models.ErrorResponse;
 import com.hypertrack.lib.models.SuccessResponse;
 import com.hypertrack.lib.models.User;
@@ -28,7 +26,6 @@ public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener {
 
-    private static final String TAG = "MainActivity";
     private static final int RC_SIGN_IN = 9001;
 
     // UI Elements
@@ -64,15 +61,12 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void getGoogleSignInOptions() {
-        // Configure sign-in to request the user's ID, email address, and basic
         googleSignInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
     }
 
     private void getGoogleApiClient() {
-        // Build a GoogleApiClient with access to the Google Sign-In API and the
-        // options specified by googleSignInOptions.
         googleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API, googleSignInOptions)
@@ -133,7 +127,11 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void createOrLoginHypertrackUser() {
-        HyperTrack.getOrCreateUser(googleAccount.getDisplayName(), null, googleAccount.getId(),
+        String userName = googleAccount.getDisplayName();
+        String phoneNumber = null;
+        String userId = googleAccount.getId();
+
+        HyperTrack.getOrCreateUser(userName, phoneNumber, userId,
             new HyperTrackCallback() {
                 @Override
                 public void onSuccess(@NonNull SuccessResponse successResponse) {
@@ -148,11 +146,16 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void onHypertrackUserLoginSuccess(SuccessResponse successResponse) {
-        user = (User) successResponse.getResponseObject();
+        User user = (User) successResponse.getResponseObject();
+        UserData.getInstance().setUser(user);
+
         welcomeText.setText("Hi " + user.getName());
 
         Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
+        mapIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(mapIntent);
+        overridePendingTransition(0, 0);
+        finish();
     }
 
     private void onHypertrackUserLoginError(ErrorResponse errorResponse) {
@@ -190,7 +193,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
 
-        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
             GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
             handleSignInResult(result);
