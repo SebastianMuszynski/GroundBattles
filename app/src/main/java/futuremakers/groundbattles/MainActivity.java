@@ -18,6 +18,8 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.hypertrack.lib.HyperTrack;
 import com.hypertrack.lib.callbacks.HyperTrackCallback;
+import com.hypertrack.lib.models.Action;
+import com.hypertrack.lib.models.ActionParams;
 import com.hypertrack.lib.models.ErrorResponse;
 import com.hypertrack.lib.models.SuccessResponse;
 import com.hypertrack.lib.models.User;
@@ -37,16 +39,20 @@ public class MainActivity extends AppCompatActivity implements
     private GoogleSignInOptions googleSignInOptions;
     private GoogleApiClient googleApiClient;
     private GoogleSignInAccount googleAccount;
-    private User hypertrackUser;
+    private User user;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        welcomeText = (TextView) findViewById(R.id.welcomeText);
 
         initHyperTrack();
         initGoogleSignIn();
+        initView();
+    }
+
+    private void initView() {
+        welcomeText = (TextView) findViewById(R.id.welcomeText);
     }
 
     private void initGoogleSignIn() {
@@ -128,22 +134,22 @@ public class MainActivity extends AppCompatActivity implements
 
     private void createOrLoginHypertrackUser() {
         HyperTrack.getOrCreateUser(googleAccount.getDisplayName(), null, googleAccount.getId(),
-                new HyperTrackCallback() {
-                    @Override
-                    public void onSuccess(@NonNull SuccessResponse successResponse) {
-                        onHypertrackUserLoginSuccess(successResponse);
-                    }
+            new HyperTrackCallback() {
+                @Override
+                public void onSuccess(@NonNull SuccessResponse successResponse) {
+                    onHypertrackUserLoginSuccess(successResponse);
+                }
 
-                    @Override
-                    public void onError(@NonNull ErrorResponse errorResponse) {
-                        onHypertrackUserLoginError(errorResponse);
-                    }
-                });
+                @Override
+                public void onError(@NonNull ErrorResponse errorResponse) {
+                    onHypertrackUserLoginError(errorResponse);
+                }
+            });
     }
 
     private void onHypertrackUserLoginSuccess(SuccessResponse successResponse) {
-        hypertrackUser = (User) successResponse.getResponseObject();
-        welcomeText.setText("Hi " + hypertrackUser.getName());
+        user = (User) successResponse.getResponseObject();
+        welcomeText.setText("Hi " + user.getName());
 
         Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
         startActivity(mapIntent);
