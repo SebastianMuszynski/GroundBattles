@@ -152,7 +152,10 @@ public class MainActivity extends AppCompatActivity implements
         welcomeText.setText("Hi " + loggedUser.getName());
 
         Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
+        mapIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(mapIntent);
+        overridePendingTransition(0, 0);
+        finish();
     }
 
     private void onHypertrackUserLoginError(ErrorResponse errorResponse) {
