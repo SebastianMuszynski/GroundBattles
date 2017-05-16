@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity implements
 
     // UI Elements
     private SignInButton googleSignInButton;
-    private TextView welcomeText;
 
     // Objects
     private GoogleSignInOptions googleSignInOptions;
@@ -45,11 +44,6 @@ public class MainActivity extends AppCompatActivity implements
 
         initHyperTrack();
         initGoogleSignIn();
-        initView();
-    }
-
-    private void initView() {
-        welcomeText = (TextView) findViewById(R.id.welcomeText);
     }
 
     private void initGoogleSignIn() {
@@ -149,8 +143,6 @@ public class MainActivity extends AppCompatActivity implements
         User user = (User) successResponse.getResponseObject();
         UserData.getInstance().setUser(user);
 
-        welcomeText.setText("Hi " + user.getName());
-
         Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
         mapIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(mapIntent);
@@ -173,7 +165,7 @@ public class MainActivity extends AppCompatActivity implements
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 ensureLocationSettingsAndContinue();
             } else {
-                welcomeText.setText("GroundBattles needs your location permisions");
+                Toast.makeText(getApplicationContext(), "GroundBattles needs your location permisions", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -189,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements
             if (resultCode == Activity.RESULT_OK) {
                 ensureLocationSettingsAndContinue();
             } else {
-                welcomeText.setText("GroundBattles needs your location permisions");
+                Toast.makeText(getApplicationContext(), "GroundBattles needs your location permisions", Toast.LENGTH_SHORT).show();
             }
         }
 
