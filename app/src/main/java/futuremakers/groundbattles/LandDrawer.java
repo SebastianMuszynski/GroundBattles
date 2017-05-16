@@ -46,6 +46,11 @@ public class LandDrawer {
         return drawPolyline();
     }
 
+    public Polyline drawEntirePolyline(List<LatLng> points) {
+        for (LatLng point : points) addPoint(point);
+        return drawPolyline();
+    }
+
     public Circle drawCircle(LatLng centerPoint, double radius) {
         return map.addCircle(
             new CircleOptions()

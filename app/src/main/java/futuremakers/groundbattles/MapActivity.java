@@ -14,6 +14,7 @@ import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polyline;
+import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 import com.hypertrack.lib.HyperTrack;
 import com.hypertrack.lib.HyperTrackMapFragment;
@@ -103,48 +104,55 @@ public class MapActivity extends AppCompatActivity {
 
         @Override
         public void onActionRefreshed(List<String> refreshedActionIds, List<Action> refreshedActions) {
-            super.onActionRefreshed(refreshedActionIds, refreshedActions);
             Toast.makeText(getApplicationContext(), "Action Refreshed", Toast.LENGTH_SHORT).show();
 
-            HyperTrack.getCurrentLocation(new HyperTrackCallback() {
-                @Override
-                public void onSuccess(@NonNull SuccessResponse successResponse) {
-                    Location location = (Location) successResponse.getResponseObject();
+            String polyline = refreshedActions.get(0).getEncodedPolyline();
 
-                    LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+            if (polyline != null) {
+                List<LatLng> decodedPolyline = PolyUtil.decode(polyline);
+                landDrawer.drawEntirePolyline(decodedPolyline);
+                Toast.makeText(getApplicationContext(), "I'm drawing!", Toast.LENGTH_SHORT).show();
+            }
 
-                    if(startPoint == null) {
-                        startPoint = currentLocation;
-                        userPath = landDrawer.drawPolyline(currentLocation);
-                    } else {
-                        if(hasStartedTakingLand) {
-                            if(SphericalUtil.computeDistanceBetween(startPoint, currentLocation) <= startCircleRadius) {
-                                landDrawer.drawPolygon();
-                                userPath.remove();
-                                stopTrackingUser();
-                            } else {
-                                userPath = landDrawer.drawPolyline(currentLocation);
-                            }
-                        } else {
-                            if(!isCircleDrawn) {
-                                startCircle = landDrawer.drawCircle(startPoint, startCircleRadius);
-                                isCircleDrawn = true;
-                            }
-                            if(SphericalUtil.computeDistanceBetween(startPoint, currentLocation) > startCircleRadius) {
-                                hasStartedTakingLand = true;
-                                startCircle.remove();
-                            }
-                        }
-
-                    }
-                    Toast.makeText(MapActivity.this, String.valueOf(SphericalUtil.computeDistanceBetween(startPoint, currentLocation)), Toast.LENGTH_SHORT).show();
-                }
-
-                @Override
-                public void onError(@NonNull ErrorResponse errorResponse) {
-                    Toast.makeText(getApplicationContext(), "On Action Refreshed error", Toast.LENGTH_SHORT).show();
-                }
-            });
+//            HyperTrack.getCurrentLocation(new HyperTrackCallback() {
+//                @Override
+//                public void onSuccess(@NonNull SuccessResponse successResponse) {
+//                    Location location = (Location) successResponse.getResponseObject();
+//
+//                    LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+//
+//                    if(startPoint == null) {
+//                        startPoint = currentLocation;
+//                        userPath = landDrawer.drawPolyline(currentLocation);
+//                    } else {
+//                        if(hasStartedTakingLand) {
+//                            if(SphericalUtil.computeDistanceBetween(startPoint, currentLocation) <= startCircleRadius) {
+//                                landDrawer.drawPolygon();
+//                                userPath.remove();
+//                                stopTrackingUser();
+//                            } else {
+//                                userPath = landDrawer.drawPolyline(currentLocation);
+//                            }
+//                        } else {
+//                            if(!isCircleDrawn) {
+//                                startCircle = landDrawer.drawCircle(startPoint, startCircleRadius);
+//                                isCircleDrawn = true;
+//                            }
+//                            if(SphericalUtil.computeDistanceBetween(startPoint, currentLocation) > startCircleRadius) {
+//                                hasStartedTakingLand = true;
+//                                startCircle.remove();
+//                            }
+//                        }
+//
+//                    }
+//                    Toast.makeText(MapActivity.this, String.valueOf(SphericalUtil.computeDistanceBetween(startPoint, currentLocation)), Toast.LENGTH_SHORT).show();
+//                }
+//
+//                @Override
+//                public void onError(@NonNull ErrorResponse errorResponse) {
+//                    Toast.makeText(getApplicationContext(), "On Action Refreshed error", Toast.LENGTH_SHORT).show();
+//                }
+//            });
         }
     };
 
@@ -154,7 +162,9 @@ public class MapActivity extends AppCompatActivity {
             public void onSuccess(@NonNull SuccessResponse successResponse) {
                 Toast.makeText(MapActivity.this, "Started tracking!", Toast.LENGTH_SHORT).show();
 
-                assignActionToUser();
+                if (ActionsData.getInstance().getActionIds().size() < 1) {
+                    assignActionToUser();
+                }
             }
 
             @Override
@@ -203,36 +213,17 @@ public class MapActivity extends AppCompatActivity {
 
     private void trackActions() {
         System.out.println(ActionsData.getInstance().getActionIds());
-        HyperTrack.trackAction(ActionsData.getInstance().getActionIds(), new HyperTrackCallback() {
-            @Override
-            public void onSuccess(@NonNull SuccessResponse response) {
-                List<Action> actionsList = (List<Action>) response.getResponseObject();
-                System.out.println(actionsList);
-
-                HyperTrack.getAction(actionsList.get(0).getId(), new HyperTrackCallback() {
-                    @Override
-                    public void onSuccess(@NonNull SuccessResponse response) {
-                        Action actionResponse = (Action) response.getResponseObject();
-                        System.out.println(actionResponse);
-                    }
-
-                    @Override
-                    public void onError(@NonNull ErrorResponse errorResponse) {
-                        Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
-            @Override
-            public void onError(@NonNull ErrorResponse errorResponse) {
-                Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
-            }
-        });
+        HyperTrack.trackAction(ActionsData.getInstance().getActionIds(), null);
     }
 
     private void stopTrackingUser() {
+        if (ActionsData.getInstance().getActionIds().size() > 0) {
+            HyperTrack.completeAction(ActionsData.getInstance().getActionIds().get(0));
+        }
+
         HyperTrack.stopTracking();
+
         isCircleDrawn = false;
-        HyperTrack.removeActions(null);
+//      // HyperTrack.removeActions(ActionsData.getInstance().getActionIds());
     }
 }
