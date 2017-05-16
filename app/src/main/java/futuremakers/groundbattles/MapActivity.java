@@ -45,7 +45,6 @@ public class MapActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
-
         initView();
     }
 
@@ -123,6 +122,7 @@ public class MapActivity extends AppCompatActivity {
                             if(SphericalUtil.computeDistanceBetween(startPoint, currentLocation) <= startCircleRadius) {
                                 landDrawer.drawPolygon();
                                 userPath.remove();
+                                stopTrackingUser();
                             } else {
                                 userPath = landDrawer.drawPolyline(currentLocation);
                             }
