@@ -105,7 +105,6 @@ public class MainActivity extends AppCompatActivity implements
 
     private void initHyperTrack() {
         HyperTrack.initialize(this, "pk_test_1305b4b0cfd67a5743605023bc9c85d71f84fcca");
-        HyperTrack.enableMockLocations(true);
     }
 
     private void ensureLocationSettingsAndContinue() {
