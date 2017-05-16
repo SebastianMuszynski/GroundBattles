@@ -1,5 +1,7 @@
 package futuremakers.groundbattles;
 
+import android.app.TaskStackBuilder;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -28,8 +30,9 @@ public class MapActivity extends AppCompatActivity {
 
     private HyperTrackMapFragment htMap;
     private LandDrawer landDrawer;
-    private Button startTrackingBtn;
-    private Button stopTrackingBtn;
+    private Button startTakingLandBtn;
+    private Button stopTakingLandBtn;
+    private Button logoutBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,20 +54,35 @@ public class MapActivity extends AppCompatActivity {
     }
 
     private void initBtns() {
-        startTrackingBtn = (Button) findViewById(R.id.startTrackingBtn);
-        stopTrackingBtn = (Button) findViewById(R.id.stopTrackingBtn);
+        startTakingLandBtn = (Button) findViewById(R.id.startTakingLandBtn);
+        stopTakingLandBtn = (Button) findViewById(R.id.stopTakingLandBtn);
+        logoutBtn = (Button) findViewById(R.id.logoutBtn);
 
-        startTrackingBtn.setOnClickListener(new View.OnClickListener() {
+        startTakingLandBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startTrackingUser();
+                startTakingLand();
             }
         });
 
-        stopTrackingBtn.setOnClickListener(new View.OnClickListener() {
+        stopTakingLandBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                stopTrackingUser();
+                stopTakingLand();
+            }
+        });
+
+        logoutBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                HyperTrack.removeActions(null);
+                HyperTrack.stopTracking();
+
+                TaskStackBuilder.create(MapActivity.this)
+                        .addNextIntentWithParentStack(new Intent(MapActivity.this, MainActivity.class)
+                            .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                        .startActivities();
+                finish();
             }
         });
     }
@@ -73,6 +91,95 @@ public class MapActivity extends AppCompatActivity {
         htMap = (HyperTrackMapFragment) getSupportFragmentManager().findFragmentById(R.id.htMapFragment);
         htMap.setHTMapAdapter(new MyMapAdapter(MapActivity.this));
         htMap.setMapFragmentCallback(htMapCallback);
+    }
+
+    private void startTakingLand() {
+        HyperTrack.getCurrentLocation(new HyperTrackCallback() {
+            @Override
+            public void onSuccess(@NonNull SuccessResponse successResponse) {
+                Toast.makeText(MapActivity.this, "Assigning user an action", Toast.LENGTH_SHORT).show();
+
+                assignActionToUser();
+            }
+
+            @Override
+            public void onError(@NonNull ErrorResponse errorResponse) {
+                Toast.makeText(MapActivity.this, "startTakingLand problem!", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void assignActionToUser() {
+        String userId = UserData.getInstance().getUser().getId();
+        String expectedPlaceId = null;
+        Place expectedPlace = null;
+        String lookupId = null;
+        String type = Action.ACTION_TYPE_VISIT;
+        String expectedAt = null;
+
+        Toast.makeText(getApplicationContext(), "Trying to assign an action", Toast.LENGTH_SHORT).show();
+
+
+        ActionParams actionParams = new ActionParams(
+            userId,
+            expectedPlaceId,
+            expectedPlace,
+            type,
+            lookupId,
+            expectedAt
+        );
+
+        HyperTrack.createAndAssignAction(actionParams, new HyperTrackCallback() {
+            @Override
+            public void onSuccess(@NonNull SuccessResponse successResponse) {
+                if (successResponse.getResponseObject() != null) {
+                    Action action = (Action) successResponse.getResponseObject();
+                    ActionsData.getInstance().addAction(action.getId());
+                    Toast.makeText(getApplicationContext(), "Assigned an action to user!", Toast.LENGTH_SHORT).show();
+
+                    trackActions();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Could not assign an action to a user", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onError(@NonNull ErrorResponse errorResponse) {
+                Toast.makeText(getApplicationContext(), "Could not assign an action to a user", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void trackActions() {
+        HyperTrack.trackAction(ActionsData.getInstance().getActionIds(), new HyperTrackCallback() {
+            @Override
+            public void onSuccess(@NonNull SuccessResponse response) {
+                List<Action> actionsList = (List<Action>) response.getResponseObject();
+                HyperTrack.getAction(actionsList.get(0).getId(), new HyperTrackCallback() {
+                    @Override
+                    public void onSuccess(@NonNull SuccessResponse response) {
+                        Action actionResponse = (Action) response.getResponseObject();
+                        System.out.println(actionResponse);
+                    }
+
+                    @Override
+                    public void onError(@NonNull ErrorResponse errorResponse) {
+                        Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(@NonNull ErrorResponse errorResponse) {
+                Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void stopTakingLand() {
+        if (ActionsData.getInstance().getActionIds().size() > 0) {
+            HyperTrack.completeAction(ActionsData.getInstance().getActionIds().get(0));
+        }
     }
 
     private MapFragmentCallback htMapCallback = new MapFragmentCallback() {
@@ -104,98 +211,4 @@ public class MapActivity extends AppCompatActivity {
             System.out.println(landDrawer.getPolylineLength());
         }
     };
-
-    private void trackActions() {
-        System.out.println(ActionsData.getInstance().getActionIds());
-        HyperTrack.trackAction(ActionsData.getInstance().getActionIds(), new HyperTrackCallback() {
-            @Override
-            public void onSuccess(@NonNull SuccessResponse response) {
-                List<Action> actionsList = (List<Action>) response.getResponseObject();
-                System.out.println(actionsList);
-
-//                // Start Activity containing HyperTrackMapFragment
-//                // ActionId can also be passed along as intent extras
-
-//                Intent intent = new Intent(this, TrackingActivity.class);
-//                startActivity(intent);
-
-                HyperTrack.getAction(actionsList.get(0).getId(), new HyperTrackCallback() {
-                    @Override
-                    public void onSuccess(@NonNull SuccessResponse response) {
-                        Action actionResponse = (Action) response.getResponseObject();
-                        System.out.println(actionResponse);
-                    }
-
-                    @Override
-                    public void onError(@NonNull ErrorResponse errorResponse) {
-                        Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
-            @Override
-            public void onError(@NonNull ErrorResponse errorResponse) {
-                Toast.makeText(MapActivity.this, "Tracking action problem!", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void startTrackingUser() {
-        HyperTrack.startTracking(new HyperTrackCallback() {
-            @Override
-            public void onSuccess(@NonNull SuccessResponse successResponse) {
-                Toast.makeText(MapActivity.this, "Started tracking!", Toast.LENGTH_SHORT).show();
-
-                assignActionToUser();
-            }
-
-            @Override
-            public void onError(@NonNull ErrorResponse errorResponse) {
-                Toast.makeText(MapActivity.this, "Stopped tracking!", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void assignActionToUser() {
-        String userId = UserData.getInstance().getUser().getId();
-        String expectedPlaceId = null;
-        Place expectedPlace = null;
-        String lookupId = null;
-        String type = Action.ACTION_TYPE_VISIT;
-        String expectedAt = null;
-
-        ActionParams actionParams = new ActionParams(
-            userId,
-            expectedPlaceId,
-            expectedPlace,
-            type,
-            lookupId,
-            expectedAt
-        );
-
-        HyperTrack.createAndAssignAction(actionParams, new HyperTrackCallback() {
-            @Override
-            public void onSuccess(@NonNull SuccessResponse successResponse) {
-                if (successResponse.getResponseObject() != null) {
-                    Action action = (Action) successResponse.getResponseObject();
-                    ActionsData.getInstance().addAction(action.getId());
-
-                    trackActions();
-                } else {
-                    Toast.makeText(getApplicationContext(), "Could not assign an action to a user", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onError(@NonNull ErrorResponse errorResponse) {
-                Toast.makeText(getApplicationContext(), "Could not assign an action to a user", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void stopTrackingUser() {
-        HyperTrack.stopTracking();
-
-        HyperTrack.removeActions(null);
-    }
 }

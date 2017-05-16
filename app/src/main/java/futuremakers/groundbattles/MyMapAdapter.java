@@ -14,24 +14,24 @@ class MyMapAdapter extends HyperTrackMapAdapter {
         this.mContext = mContext;
     }
 
-    @Override
-    public int getSourceMarkerIconForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
-        return R.drawable.marker_cat;
-    }
+//    @Override
+//    public int getSourceMarkerIconForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
+//        return R.drawable.ic_ht_hero_marker_car;
+//    }
 
     @Override
     public int getHeroMarkerIconForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
-        return R.drawable.marker_cat;
+        return R.drawable.ic_ht_hero_marker_car;
     }
 
-    @Override
-    public View getHeroMarkerViewForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
-        return null;
-    }
+//    @Override
+//    public View getHeroMarkerViewForActionID(HyperTrackMapFragment hyperTrackMapFragment, String actionID) {
+//        return null;
+//    }
 
     @Override
     public boolean enableLiveLocationSharingView() {
-        return false;
+        return true;
     }
 
     @Override

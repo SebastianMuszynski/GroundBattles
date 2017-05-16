@@ -1,13 +1,13 @@
 package futuremakers.groundbattles;
 
 import android.app.Activity;
+import android.app.TaskStackBuilder;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -143,11 +143,26 @@ public class MainActivity extends AppCompatActivity implements
         User user = (User) successResponse.getResponseObject();
         UserData.getInstance().setUser(user);
 
-        Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
-        mapIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(mapIntent);
-        overridePendingTransition(0, 0);
-        finish();
+        startUserTracking();
+    }
+
+    private void startUserTracking() {
+        HyperTrack.startTracking(new HyperTrackCallback() {
+            @Override
+            public void onSuccess(@NonNull SuccessResponse successResponse) {
+
+                TaskStackBuilder.create(MainActivity.this)
+                        .addNextIntentWithParentStack(new Intent(MainActivity.this, MapActivity.class)
+                                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                        .startActivities();
+                finish();
+            }
+
+            @Override
+            public void onError(@NonNull ErrorResponse errorResponse) {
+                Toast.makeText(getApplicationContext(), "Hypertrack start user tracking error", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void onHypertrackUserLoginError(ErrorResponse errorResponse) {
