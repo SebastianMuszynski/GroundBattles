@@ -26,7 +26,6 @@ public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener {
 
-    private static final String TAG = "MainActivity";
     private static final int RC_SIGN_IN = 9001;
 
     // UI Elements
@@ -37,16 +36,20 @@ public class MainActivity extends AppCompatActivity implements
     private GoogleSignInOptions googleSignInOptions;
     private GoogleApiClient googleApiClient;
     private GoogleSignInAccount googleAccount;
-    private User hypertrackUser;
+    private User user;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        welcomeText = (TextView) findViewById(R.id.welcomeText);
 
         initHyperTrack();
         initGoogleSignIn();
+        initView();
+    }
+
+    private void initView() {
+        welcomeText = (TextView) findViewById(R.id.welcomeText);
     }
 
     private void initGoogleSignIn() {
@@ -58,15 +61,12 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void getGoogleSignInOptions() {
-        // Configure sign-in to request the user's ID, email address, and basic
         googleSignInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
     }
 
     private void getGoogleApiClient() {
-        // Build a GoogleApiClient with access to the Google Sign-In API and the
-        // options specified by googleSignInOptions.
         googleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API, googleSignInOptions)
@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void initHyperTrack() {
-        HyperTrack.initialize(this, "pk_f04d294b0576604faf34b6dcd51aed573531dc2f");
+        HyperTrack.initialize(this, "pk_test_1305b4b0cfd67a5743605023bc9c85d71f84fcca");
     }
 
     private void ensureLocationSettingsAndContinue() {
@@ -132,24 +132,24 @@ public class MainActivity extends AppCompatActivity implements
         String userId = googleAccount.getId();
 
         HyperTrack.getOrCreateUser(userName, phoneNumber, userId,
-                new HyperTrackCallback() {
-                    @Override
-                    public void onSuccess(@NonNull SuccessResponse successResponse) {
-                        onHypertrackUserLoginSuccess(successResponse);
-                    }
+            new HyperTrackCallback() {
+                @Override
+                public void onSuccess(@NonNull SuccessResponse successResponse) {
+                    onHypertrackUserLoginSuccess(successResponse);
+                }
 
-                    @Override
-                    public void onError(@NonNull ErrorResponse errorResponse) {
-                        onHypertrackUserLoginError(errorResponse);
-                    }
-                });
+                @Override
+                public void onError(@NonNull ErrorResponse errorResponse) {
+                    onHypertrackUserLoginError(errorResponse);
+                }
+            });
     }
 
     private void onHypertrackUserLoginSuccess(SuccessResponse successResponse) {
-        User loggedUser = (User) successResponse.getResponseObject();
-        UserData.getInstance().setUser(loggedUser);
+        User user = (User) successResponse.getResponseObject();
+        UserData.getInstance().setUser(user);
 
-        welcomeText.setText("Hi " + loggedUser.getName());
+        welcomeText.setText("Hi " + user.getName());
 
         Intent mapIntent = new Intent(MainActivity.this, MapActivity.class);
         mapIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -193,7 +193,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
 
-        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
             GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
             handleSignInResult(result);
